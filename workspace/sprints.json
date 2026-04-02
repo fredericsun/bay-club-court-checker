@@ -1,0 +1,77 @@
+{
+  "sprints": [
+    {
+      "sprint": 1,
+      "name": "Auth + Scraping",
+      "features": [
+        "Read BAY_CLUB_USERNAME and BAY_CLUB_PASSWORD from environment variables; raise a clear error if either is missing",
+        "Async Playwright login to the Bay Club member portal; retry up to 3 times on network timeout or HTTP 5xx; exit with descriptive message on auth failure",
+        "Navigate to the tennis court reservations page for a given location and date",
+        "Parse available time slots from the reservations page into a list of dicts: {date, location, court_type, start_time, end_time, court_id}",
+        "Scraping layer accepts an injectable page-fetcher callable so tests can pass a local HTML fixture instead of hitting the live portal"
+      ],
+      "out_of_scope": [
+        "CLI flags (--location, --date, etc.) — hardcode test values in Sprint 1",
+        "Notifications (desktop or email)",
+        "Polling loop",
+        "Filtering by time window or court type"
+      ],
+      "acceptance_criteria": [
+        "PASS: Running `python checker.py` with BAY_CLUB_USERNAME and BAY_CLUB_PASSWORD unset prints 'Error: BAY_CLUB_USERNAME not set' and exits with code 1",
+        "PASS: `parse_slots(html)` called with the bundled fixture file `tests/fixtures/reservations.html` returns a list of >= 1 dicts each containing keys: date, location, court_type, start_time, end_time, court_id",
+        "PASS: `parse_slots(html)` called with a fixture that has zero available slots returns an empty list without raising an exception",
+        "PASS: The login function retries exactly 3 times when the injected page-fetcher raises a TimeoutError, then raises a fatal LoginError",
+        "PASS: No credentials appear in any log output or exception message"
+      ]
+    },
+    {
+      "sprint": 2,
+      "name": "Notification + Polling",
+      "features": [
+        "macOS desktop notification via `osascript` when a matching slot is found; fall back to stdout `[MATCH FOUND]` prefix if osascript is unavailable",
+        "Optional SMTP email notification when SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and NOTIFY_EMAIL env vars are all set; skip silently if any are missing",
+        "Polling loop using asyncio sleep that runs the availability check every --interval seconds (default 300); no drift accumulation",
+        "Clean Ctrl-C exit: catch KeyboardInterrupt, print 'Stopped.', exit with code 0",
+        "Transient network errors (timeout, connection reset) during a poll log a warning and continue to the next poll without crashing"
+      ],
+      "out_of_scope": [
+        "CLI flags beyond --interval — still hardcode location/date/filters for now",
+        "Persistent notification deduplication across restarts",
+        "SMS or push notifications"
+      ],
+      "acceptance_criteria": [
+        "PASS: `notify_desktop(message)` with osascript mocked to return exit code 0 completes without raising an exception",
+        "PASS: `notify_desktop(message)` with osascript mocked to raise FileNotFoundError prints the message to stdout with '[MATCH FOUND]' prefix instead of raising",
+        "PASS: `notify_email(message)` with all SMTP env vars set calls smtplib.SMTP and sends exactly one message; with any var missing it returns without calling smtplib.SMTP",
+        "PASS: Polling loop calls the checker function exactly 3 times when mocked to succeed, with asyncio.sleep called between each with the configured interval value",
+        "PASS: Sending SIGINT to the polling loop results in 'Stopped.' printed to stdout and process exits with code 0",
+        "PASS: Polling loop continues and logs a warning when the checker function raises a ConnectionError on the second of three calls"
+      ]
+    },
+    {
+      "sprint": 3,
+      "name": "CLI + Config",
+      "features": [
+        "click-based CLI with flags: --location (required), --court-type (default 'tennis'), --date (YYYY-MM-DD, default today), --time-start (HH:MM 24h), --time-end (HH:MM 24h), --interval (int seconds, default 300), --once (boolean flag: run one check and exit)",
+        "--help output documents all flags with types, defaults, and descriptions",
+        "--location value is passed through to the scraper and availability filter",
+        "--time-start and --time-end filter slots so only those overlapping the window are returned",
+        "--date validates YYYY-MM-DD format and rejects invalid dates with 'Error: Invalid date format. Use YYYY-MM-DD.' and exit code 2",
+        "Graceful auth failure message: 'Error: Login failed. Check BAY_CLUB_USERNAME and BAY_CLUB_PASSWORD.' with exit code 1"
+      ],
+      "out_of_scope": [
+        "Config file support (e.g., .env loading via python-dotenv) — user sets env vars manually",
+        "Multiple --location values in one invocation",
+        "Interactive mode or TUI"
+      ],
+      "acceptance_criteria": [
+        "PASS: `python checker.py --help` exits with code 0 and output contains '--location', '--court-type', '--date', '--time-start', '--time-end', '--interval', '--once'",
+        "PASS: `python checker.py --location SF-Olympic --date not-a-date` exits with code 2 and prints 'Error: Invalid date format'",
+        "PASS: `filter_slots(slots, time_start='08:00', time_end='10:00')` returns only slots whose start_time is >= 08:00 and < 10:00 when given a mixed fixture list",
+        "PASS: `filter_slots(slots, time_start=None, time_end=None)` returns all slots unchanged",
+        "PASS: Running with --once flag causes the poller to execute exactly one check and exit with code 0 (verified by mocking the checker and asserting call count == 1)",
+        "PASS: Running with --location 'SF-Olympic' passes 'SF-Olympic' as the location argument to the scraper function (verified via mock assertion)"
+      ]
+    }
+  ]
+}

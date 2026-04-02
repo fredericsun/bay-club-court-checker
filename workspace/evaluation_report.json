@@ -1,0 +1,44 @@
+{
+  "sprint": 3,
+  "score": 92,
+  "passed": true,
+  "verdict": "pass",
+  "criteria_results": [
+    {
+      "criterion": "python checker.py --help exits with code 0 and output contains all seven flags",
+      "result": "pass",
+      "notes": "Ran `python3 checker.py --help` directly. Exit code 0. All flags present: --location, --court-type, --date, --time-start, --time-end, --interval, --once. Types and defaults are documented."
+    },
+    {
+      "criterion": "python checker.py --location SF-Olympic --date not-a-date exits with code 2 and prints 'Error: Invalid date format'",
+      "result": "pass",
+      "notes": "Ran command directly. Exit code 2. Output: 'Error: Invalid date format. Use YYYY-MM-DD.' Criterion met exactly."
+    },
+    {
+      "criterion": "filter_slots(slots, time_start='08:00', time_end='10:00') returns only slots with start_time in [08:00, 10:00)",
+      "result": "pass",
+      "notes": "test_filter_slots_by_time_window passes. Verified logic in checker.py lines 264-272: lower bound inclusive, upper bound exclusive via string comparison, correct for HH:MM 24h format."
+    },
+    {
+      "criterion": "filter_slots(slots, time_start=None, time_end=None) returns all slots unchanged",
+      "result": "pass",
+      "notes": "test_filter_slots_no_bounds_returns_all passes. Implementation short-circuits at line 261 and returns the original list object unchanged."
+    },
+    {
+      "criterion": "--once flag causes the poller to execute exactly one check and exit with code 0",
+      "result": "pass",
+      "notes": "test_once_flag_calls_get_slots_exactly_once passes. Code path verified in checker.py lines 476-479: `if once: await checker_fn()` bypasses run_poll_loop entirely. Call count asserted == 1."
+    },
+    {
+      "criterion": "--location 'SF-Olympic' passes 'SF-Olympic' as the location argument to the scraper function",
+      "result": "pass",
+      "notes": "test_location_passed_to_scraper passes. Location threaded from CLI parameter through _run() into get_available_slots() call at line 454. Captured and asserted == 'SF-Olympic'."
+    }
+  ],
+  "blocking_issues": [],
+  "nice_to_fix": [
+    "test_valid_date_accepted patches asyncio.run with a plain MagicMock, which never awaits the _run coroutine. Python emits 'RuntimeWarning: coroutine _run was never awaited' at teardown. The test passes and this is not a production bug, but the test could be improved to use AsyncMock or patch _run directly to avoid the warning.",
+    "notify_email sends credentials over plain SMTP without STARTTLS (carried forward from Sprint 2). Should use smtp.starttls() before smtp.login() to protect credentials in transit."
+  ],
+  "evidence": "Installed dependencies via pip3 with no errors. Ran `python3 -m pytest tests/test_sprint3.py -v`: 11/11 passed (1 RuntimeWarning about an unawaited coroutine in test_valid_date_accepted, pre-acknowledged in build_summary). Ran the full suite `python3 -m pytest tests/ -v`: 39/39 passed, no regressions in Sprints 1 or 2. Executed `python3 checker.py --help` directly: exit code 0, all seven flags present with types, defaults, and descriptions. Executed `python3 checker.py --location SF-Olympic --date not-a-date` directly: exit code 2, printed 'Error: Invalid date format. Use YYYY-MM-DD.' Inspected checker.py for hardcoded credentials: none found; all credential access is via os.environ.get(). Confirmed requirements.txt includes click>=8.1.0 alongside existing dependencies."
+}

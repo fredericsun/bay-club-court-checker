@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bay Club — Tennis Reservations</title>
+</head>
+<body>
+  <h1>Tennis Court Reservations — SF Olympic Club</h1>
+  <p>Date: 2026-04-05</p>
+
+  <div id="reservation-grid">
+
+    <!-- Available slot: Court 1, 07:00–08:00 -->
+    <div class="slot available"
+         data-court-id="court-1"
+         data-start-time="07:00"
+         data-end-time="08:00">
+      <span class="court-label">Court 1</span>
+      <span class="start-time">07:00</span>
+      <span class="end-time">08:00</span>
+      <span class="status">Available</span>
+    </div>
+
+    <!-- Booked slot: Court 1, 08:00–09:00 -->
+    <div class="slot booked"
+         data-court-id="court-1"
+         data-start-time="08:00"
+         data-end-time="09:00">
+      <span class="court-label">Court 1</span>
+      <span class="start-time">08:00</span>
+      <span class="end-time">09:00</span>
+      <span class="status">Booked</span>
+    </div>
+
+    <!-- Available slot: Court 2, 09:00–10:00 -->
+    <div class="slot available"
+         data-court-id="court-2"
+         data-start-time="09:00"
+         data-end-time="10:00">
+      <span class="court-label">Court 2</span>
+      <span class="start-time">09:00</span>
+      <span class="end-time">10:00</span>
+      <span class="status">Available</span>
+    </div>
+
+    <!-- Available slot: Court 3, 10:00–11:00 -->
+    <div class="slot available"
+         data-court-id="court-3"
+         data-start-time="10:00"
+         data-end-time="11:00">
+      <span class="court-label">Court 3</span>
+      <span class="start-time">10:00</span>
+      <span class="end-time">11:00</span>
+      <span class="status">Available</span>
+    </div>
+
+  </div>
+</body>
+</html>

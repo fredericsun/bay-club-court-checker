@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bay Club — Tennis Reservations</title>
+</head>
+<body>
+  <h1>Tennis Court Reservations — SF Olympic Club</h1>
+  <p>Date: 2026-04-05</p>
+
+  <div id="reservation-grid">
+
+    <!-- All courts booked — no .slot.available elements -->
+    <div class="slot booked"
+         data-court-id="court-1"
+         data-start-time="07:00"
+         data-end-time="08:00">
+      <span class="court-label">Court 1</span>
+      <span class="start-time">07:00</span>
+      <span class="end-time">08:00</span>
+      <span class="status">Booked</span>
+    </div>
+
+    <div class="slot booked"
+         data-court-id="court-2"
+         data-start-time="08:00"
+         data-end-time="09:00">
+      <span class="court-label">Court 2</span>
+      <span class="start-time">08:00</span>
+      <span class="end-time">09:00</span>
+      <span class="status">Booked</span>
+    </div>
+
+  </div>
+
+  <p class="no-availability-message">No courts available for this date and time.</p>
+</body>
+</html>
