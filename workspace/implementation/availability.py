@@ -154,8 +154,11 @@ async def fetch_available_slots(
                 slots.append({
                     "date": date_str,
                     "court": court,
+                    "court_id": court_id,
                     "start_time": _minutes_to_hhmm(from_min),
                     "end_time": _minutes_to_hhmm(to_min),
+                    "from_minutes": from_min,
+                    "to_minutes": to_min,
                 })
     return slots
 
