@@ -1,6 +1,7 @@
 # workspace/implementation/availability.py
 import asyncio
 import logging
+from datetime import date, timedelta
 from typing import List, Optional
 
 import aiohttp
@@ -9,6 +10,24 @@ logger = logging.getLogger(__name__)
 
 API_BASE = "https://connect-api.bayclubs.io/court-booking/api/1.0"
 API_SUBSCRIPTION_KEY = "bac44a2d04b04413b6aea6d4e3aad294"
+
+
+def date_range(from_date: date, to_date: date) -> list[date]:
+    """Return dates from max(from_date, today) to min(to_date, today+3).
+
+    Never returns dates in the past or more than 3 days ahead (API limit).
+    """
+    today = date.today()
+    start = max(from_date, today)
+    end = min(to_date, today + timedelta(days=3))
+    if start > end:
+        return []
+    result = []
+    d = start
+    while d <= end:
+        result.append(d)
+        d += timedelta(days=1)
+    return result
 
 
 def _api_headers(token: str) -> dict:

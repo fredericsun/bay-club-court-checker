@@ -231,3 +231,39 @@ async def test_location_passed_to_scraper(monkeypatch):
     )
 
     assert captured_location == ["SF-Olympic"]
+
+
+# --- date_range tests ---
+from datetime import date, timedelta
+from availability import date_range
+
+
+def test_date_range_basic():
+    today = date.today()
+    result = date_range(today, today + timedelta(days=2))
+    assert result == [today, today + timedelta(days=1), today + timedelta(days=2)]
+
+
+def test_date_range_caps_at_3_days_ahead():
+    today = date.today()
+    result = date_range(today, today + timedelta(days=10))
+    assert result == [
+        today,
+        today + timedelta(days=1),
+        today + timedelta(days=2),
+        today + timedelta(days=3),
+    ]
+
+
+def test_date_range_from_in_past_starts_today():
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    result = date_range(yesterday, today + timedelta(days=1))
+    assert result == [today, today + timedelta(days=1)]
+
+
+def test_date_range_empty_when_to_before_today():
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    result = date_range(yesterday, yesterday)
+    assert result == []
