@@ -86,7 +86,10 @@ def test_help_exits_zero_and_contains_all_flags():
     for flag in [
         "--location",
         "--court-type",
-        "--date",
+        "--mode",
+        "--from",
+        "--to",
+        "--max-bookings",
         "--time-start",
         "--time-end",
         "--interval",
@@ -101,25 +104,34 @@ def test_help_exits_zero_and_contains_all_flags():
 
 
 def test_invalid_date_exits_code_2():
-    """`--date not-a-date` exits with code 2."""
+    """`--from not-a-date` exits with code 2."""
     runner = CliRunner()
-    result = runner.invoke(main, ["--location", "SF-Olympic", "--date", "not-a-date"])
+    result = runner.invoke(main, [
+        "--mode", "notify", "--location", "SF-Olympic",
+        "--from", "not-a-date", "--to", "2026-12-31",
+    ])
     assert result.exit_code == 2
 
 
 def test_invalid_date_prints_error_message():
-    """`--date not-a-date` prints 'Error: Invalid date format'."""
+    """`--from not-a-date` prints 'Error: Invalid date format'."""
     runner = CliRunner()
-    result = runner.invoke(main, ["--location", "SF-Olympic", "--date", "not-a-date"])
-    assert "Invalid date format" in result.output
+    result = runner.invoke(main, [
+        "--mode", "notify", "--location", "SF-Olympic",
+        "--from", "not-a-date", "--to", "2026-12-31",
+    ])
+    assert "Invalid" in result.output
 
 
 def test_valid_date_accepted():
-    """`--date 2026-04-05` is accepted (no validation error)."""
+    """`--from 2026-04-05 --to 2026-04-05` is accepted (no validation error)."""
     runner = CliRunner()
     # Patch _run so we don't actually hit the network
     with patch("checker.asyncio.run"):
-        result = runner.invoke(main, ["--location", "SF-Olympic", "--date", "2026-04-05"])
+        result = runner.invoke(main, [
+            "--mode", "notify", "--location", "SF-Olympic",
+            "--from", "2026-04-05", "--to", "2026-04-05",
+        ])
     # Exit code may be 0 (asyncio.run mocked) or from load_credentials; just not 2
     assert result.exit_code != 2
 
@@ -168,34 +180,36 @@ def test_filter_slots_empty_input():
 
 @pytest.mark.asyncio
 async def test_once_flag_calls_get_slots_exactly_once(monkeypatch):
-    """_run with once=True invokes get_available_slots exactly once."""
+    """_run with once=True invokes fetch_available_slots exactly once per date."""
     monkeypatch.setenv("BAY_CLUB_USERNAME", "user@example.com")
     monkeypatch.setenv("BAY_CLUB_PASSWORD", "secret")
 
-    get_slots_calls = []
+    fetch_calls = []
 
-    async def mock_get_slots(page, location, date, court_type="tennis", **kwargs):
-        get_slots_calls.append({"location": location})
+    async def mock_fetch(token, club_id, date_str, *args, **kwargs):
+        fetch_calls.append(date_str)
         return []
 
-    mock_login = AsyncMock()
-    mock_async_playwright = _make_async_playwright_mock(mock_get_slots)
+    with patch("checker.fetch_available_slots", side_effect=mock_fetch), \
+         patch("checker.login_and_get_token", return_value="tok"), \
+         patch("checker.resolve_club_id", return_value=("club-id", "SF-Olympic")), \
+         patch("checker.resolve_filter_ids", return_value=("opt-id", "ts-id", "outdoor")):
+        await checker._run(
+            mode="notify",
+            from_date=date(2026, 4, 5),
+            to_date=date(2026, 4, 5),
+            max_bookings=1,
+            location="SF-Olympic",
+            court_type="tennis",
+            players="Singles",
+            duration=60,
+            time_start=None,
+            time_end=None,
+            interval=300,
+            once=True,
+        )
 
-    monkeypatch.setattr("checker.login", mock_login)
-    monkeypatch.setattr("checker.get_available_slots", mock_get_slots)
-    monkeypatch.setattr("checker.async_playwright", mock_async_playwright)
-
-    await checker._run(
-        location="SF-Olympic",
-        court_type="tennis",
-        date_str="2026-04-05",
-        time_start=None,
-        time_end=None,
-        interval=300,
-        once=True,
-    )
-
-    assert len(get_slots_calls) == 1
+    assert len(fetch_calls) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -205,32 +219,36 @@ async def test_once_flag_calls_get_slots_exactly_once(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_location_passed_to_scraper(monkeypatch):
-    """_run passes the --location value through to get_available_slots."""
+    """_run passes the --location value through to resolve_club_id."""
     monkeypatch.setenv("BAY_CLUB_USERNAME", "user@example.com")
     monkeypatch.setenv("BAY_CLUB_PASSWORD", "secret")
 
-    captured_location = []
+    captured_locations = []
 
-    async def mock_get_slots(page, location, date, court_type="tennis", **kwargs):
-        captured_location.append(location)
-        return []
+    async def mock_resolve_club_id(token, location):
+        captured_locations.append(location)
+        return ("club-id", location)
 
-    mock_async_playwright = _make_async_playwright_mock(mock_get_slots)
-    monkeypatch.setattr("checker.login", AsyncMock())
-    monkeypatch.setattr("checker.get_available_slots", mock_get_slots)
-    monkeypatch.setattr("checker.async_playwright", mock_async_playwright)
+    with patch("checker.fetch_available_slots", return_value=[]), \
+         patch("checker.login_and_get_token", return_value="tok"), \
+         patch("checker.resolve_club_id", side_effect=mock_resolve_club_id), \
+         patch("checker.resolve_filter_ids", return_value=("opt-id", "ts-id", "outdoor")):
+        await checker._run(
+            mode="notify",
+            from_date=date(2026, 4, 5),
+            to_date=date(2026, 4, 5),
+            max_bookings=1,
+            location="SF-Olympic",
+            court_type="tennis",
+            players="Singles",
+            duration=60,
+            time_start=None,
+            time_end=None,
+            interval=300,
+            once=True,
+        )
 
-    await checker._run(
-        location="SF-Olympic",
-        court_type="tennis",
-        date_str="2026-04-05",
-        time_start=None,
-        time_end=None,
-        interval=300,
-        once=True,
-    )
-
-    assert captured_location == ["SF-Olympic"]
+    assert captured_locations == ["SF-Olympic"]
 
 
 # --- date_range tests ---
@@ -267,3 +285,43 @@ def test_date_range_empty_when_to_before_today():
     yesterday = today - timedelta(days=1)
     result = date_range(yesterday, yesterday)
     assert result == []
+
+
+# --- notify mode test ---
+from unittest.mock import AsyncMock, patch, MagicMock
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_notify_mode_iterates_all_dates_in_range():
+    """notify mode calls fetch_available_slots once per date in range."""
+    today = date.today()
+    dates_checked = []
+
+    async def mock_fetch(token, club_id, date_str, *args, **kwargs):
+        dates_checked.append(date_str)
+        return []
+
+    with patch("checker.fetch_available_slots", side_effect=mock_fetch), \
+         patch("checker.login_and_get_token", return_value="tok"), \
+         patch("checker.resolve_club_id", return_value=("club-id", "Bay Club Santa Clara")), \
+         patch("checker.resolve_filter_ids", return_value=("opt-id", "ts-id", "outdoor")):
+        from checker import _run
+        await _run(
+            mode="notify",
+            from_date=today,
+            to_date=today + timedelta(days=2),
+            max_bookings=1,
+            location="santa clara",
+            court_type="tennis",
+            players="Singles",
+            duration=60,
+            time_start=None,
+            time_end=None,
+            interval=300,
+            once=True,
+        )
+
+    assert len(dates_checked) == 3
+    assert dates_checked[0] == today.isoformat()
+    assert dates_checked[2] == (today + timedelta(days=2)).isoformat()
