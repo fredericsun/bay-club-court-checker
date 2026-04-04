@@ -14,7 +14,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import checker
-from checker import notify_desktop, notify_email, run_poll_loop
+from notifier import notify_desktop, notify_email
+from checker import run_poll_loop
 
 
 # ---------------------------------------------------------------------------
