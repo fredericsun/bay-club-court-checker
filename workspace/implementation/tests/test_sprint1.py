@@ -13,7 +13,7 @@ import pytest
 # Make checker importable without installing
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import checker
-from checker import LoginError, MAX_LOGIN_RETRIES, parse_slots
+from auth import LoginError, MAX_LOGIN_RETRIES, load_credentials
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -28,7 +28,7 @@ def test_missing_username_exits_with_code_1(monkeypatch, capsys):
     monkeypatch.delenv("BAY_CLUB_USERNAME", raising=False)
     monkeypatch.delenv("BAY_CLUB_PASSWORD", raising=False)
     with pytest.raises(SystemExit) as exc_info:
-        checker.load_credentials()
+        load_credentials()
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "BAY_CLUB_USERNAME" in (captured.out + captured.err)
@@ -39,7 +39,7 @@ def test_missing_password_exits_with_code_1(monkeypatch, capsys):
     monkeypatch.setenv("BAY_CLUB_USERNAME", "user@example.com")
     monkeypatch.delenv("BAY_CLUB_PASSWORD", raising=False)
     with pytest.raises(SystemExit) as exc_info:
-        checker.load_credentials()
+        load_credentials()
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "BAY_CLUB_PASSWORD" in (captured.out + captured.err)
@@ -48,7 +48,7 @@ def test_missing_password_exits_with_code_1(monkeypatch, capsys):
 def test_load_credentials_returns_tuple(monkeypatch):
     monkeypatch.setenv("BAY_CLUB_USERNAME", "user@example.com")
     monkeypatch.setenv("BAY_CLUB_PASSWORD", "s3cr3t")
-    username, password = checker.load_credentials()
+    username, password = load_credentials()
     assert username == "user@example.com"
     assert password == "s3cr3t"
 
