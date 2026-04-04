@@ -38,33 +38,46 @@ The `.env` file is gitignored and never committed.
 
 ## Usage
 
-### Check once
+### Notify mode — alert when a slot opens
 
 ```bash
-python checker.py --date 2026-04-05 --time-start 07:00 --time-end 10:00 --once
+python checker.py --mode notify \
+  --from 2026-04-05 --to 2026-04-30 \
+  --time-start 18:00 --time-end 21:00
+
+# Check once and exit
+python checker.py --mode notify \
+  --from 2026-04-05 --to 2026-04-30 \
+  --time-start 18:00 --time-end 21:00 --once
 ```
 
-### Poll continuously (every 5 minutes)
+### Auto-book mode — book automatically
 
 ```bash
-python checker.py --date 2026-04-05 --time-start 07:00 --time-end 10:00 --interval 300
+python checker.py --mode autobook \
+  --from 2026-04-05 --to 2026-04-06 \
+  --time-start 07:00 --time-end 10:00 \
+  --max-bookings 2
 ```
 
 Press Ctrl-C to stop.
 
-## CLI flags
+### All CLI flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--location` | `santa clara` | Club to check (e.g. `santa clara`, `redwood shores`) |
-| `--court-type` | `tennis` | Sport: `tennis`, `pickleball`, or `squash` |
+| `--mode` | required | `notify` or `autobook` |
+| `--from` | today | Start date `YYYY-MM-DD` |
+| `--to` | required | End date `YYYY-MM-DD` |
+| `--max-bookings` | `1` | Auto-book: stop after N bookings |
+| `--location` | `santa clara` | Club name |
+| `--court-type` | `tennis` | `tennis`, `pickleball`, or `squash` |
 | `--players` | `Singles` | `Singles`, `Doubles`, or `Ball machine` |
-| `--duration` | `60` | Session length in minutes: `30`, `60`, or `90` |
-| `--date` | today | Date to check in `YYYY-MM-DD` format |
+| `--duration` | `60` | Session minutes: `30`, `60`, or `90` |
 | `--time-start` | `00:00` | Start of time window (24h, inclusive) |
 | `--time-end` | `23:59` | End of time window (24h, exclusive) |
 | `--interval` | `300` | Seconds between polls |
-| `--once` | off | Run one check and exit |
+| `--once` | off | One poll cycle across all dates, then exit |
 
 ## How authentication works
 
