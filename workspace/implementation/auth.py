@@ -54,11 +54,12 @@ async def login_and_get_token(username: str, password: str) -> str:
         for attempt in range(1, MAX_LOGIN_RETRIES + 1):
             logger.debug("Login attempt %d of %d", attempt, MAX_LOGIN_RETRIES)
             try:
-                await page.goto(PORTAL_LOGIN_URL, wait_until="networkidle", timeout=30_000)
+                await page.goto(PORTAL_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_selector('input[placeholder="Member ID or Username"]', timeout=15_000)
                 await page.fill('input[placeholder="Member ID or Username"]', username)
                 await page.fill('input[placeholder="Password"]', password)
                 await page.click('button:has-text("LOG IN")')
-                await page.wait_for_url(lambda url: "login" not in url, timeout=15_000)
+                await page.wait_for_url(lambda url: "login" not in url, timeout=30_000)
                 logger.info("Login succeeded on attempt %d of %d", attempt, MAX_LOGIN_RETRIES)
                 break
             except PlaywrightTimeoutError as exc:
