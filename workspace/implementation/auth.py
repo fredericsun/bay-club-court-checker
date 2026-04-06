@@ -54,8 +54,9 @@ async def login_and_get_token(username: str, password: str) -> str:
         for attempt in range(1, MAX_LOGIN_RETRIES + 1):
             logger.debug("Login attempt %d of %d", attempt, MAX_LOGIN_RETRIES)
             try:
-                await page.goto(PORTAL_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
-                await page.wait_for_selector('input[placeholder="Member ID or Username"]', timeout=15_000)
+                await page.goto(PORTAL_LOGIN_URL, wait_until="commit", timeout=60_000)
+                await page.wait_for_selector('input[placeholder="Member ID or Username"]', timeout=60_000)
+                await page.wait_for_timeout(3000)  # wait for Angular to wire up event handlers
                 await page.fill('input[placeholder="Member ID or Username"]', username)
                 await page.fill('input[placeholder="Password"]', password)
                 await page.click('button:has-text("LOG IN")')
